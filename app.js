@@ -12,7 +12,7 @@ todoButton.addEventListener("click", addTodo);
 todoList.addEventListener("click", deleteOrCheck);
 filterOption.addEventListener("click", filterTodo);
 
-// Functions
+// Functions --- TODO portion ---
 function addTodo(event) {
   event.preventDefault();
 
@@ -48,39 +48,57 @@ function addTodo(event) {
   todoInput.value = "";
 }
 
+function saveNewTodo(todo) {
+  // check - do I already have things in there?
+  let todos = getUncompleteFromLocal();
+  todos.push(todo);
+  setToLocalStorage("todos", todos);
+}
+
 function deleteOrCheck(event) {
   const item = event.target;
   if (item.classList[0] === "trash-button") {
-    const todo = item.parentElement;
-    // animation
-    todo.classList.add("fall");
-
-    // delete the todo from all local storage
-    removeFromTodo(todo);
-    if (todo.classList.contains("completed")) {
-      removeFromCompleted(todo);
-    }
-
-    // wait until transion to remove todo element
-    todo.addEventListener("transitionend", function () {
-      todo.remove();
-    });
+    trashTodo(item);
   }
 
   // mark todo as complete
   if (item.classList[0] === "complete-button") {
-    const todo = item.parentElement;
-    todo.classList.toggle("completed");
+    toggleCompleted(item);
+  }
+}
 
-    // put the completed todo in completedTodos local storage
-    if (todo.classList.contains("completed")) {
-      const completedText = todo.children[0].innerText;
-      let completedTodos = getCompletedFromLocal();
-      completedTodos.push(completedText);
-      setToLocalStorage("completedTodos", completedTodos);
-    } else {
-      removeFromCompleted(todo);
-    }
+function trashTodo(item) {
+  const todo = item.parentElement;
+  // animation
+  todo.classList.add("fall");
+
+  // delete the todo from all local storage
+  removeFromTodo(todo);
+  if (todo.classList.contains("completed")) {
+    removeFromCompleted(todo);
+  }
+
+  // wait until transion to remove todo element
+  todo.addEventListener("transitionend", function () {
+    todo.remove();
+  });
+}
+
+function toggleCompleted(item) {
+  const todo = item.parentElement;
+  todo.classList.toggle("completed");
+
+  // put the completed todo in completedTodos local storage
+  if (todo.classList.contains("completed")) {
+    const completedText = todo.children[0].innerText;
+    let completedTodos = getCompletedFromLocal();
+    completedTodos.push(completedText);
+    setToLocalStorage("completedTodos", completedTodos);
+    removeFromTodo(todo);
+  } else {
+    const completedText = todo.children[0].innerText;
+    saveNewTodo(completedText);
+    removeFromCompleted(todo);
   }
 }
 
@@ -109,48 +127,10 @@ function filterTodo(event) {
   });
 }
 
-function saveNewTodo(todo) {
-  // check - do I already have things in there?
-  let todos = getUncompleteFromLocal();
-  todos.push(todo);
-  setToLocalStorage("todos", todos);
-}
-
-// retrieve and render todo elements TODO: break this up - retrieve.... render....
 function getTodos() {
   let todos = getUncompleteFromLocal();
   let completedTodos = getCompletedFromLocal();
   const handledSet = new Set();
-
-  completedTodos.forEach(function (todo) {
-    handledSet.add(todo);
-    const todoDiv = document.createElement("div");
-    todoDiv.classList.add("todo");
-
-    // toggle it to completed
-    todoDiv.classList.toggle("completed");
-
-    // create and add copmleted todo list item title
-    const newTodo = document.createElement("li");
-    newTodo.innerText = todo;
-    newTodo.classList.add("todo-item");
-    todoDiv.appendChild(newTodo);
-
-    // create and add completed button
-    const completeButton = document.createElement("button");
-    completeButton.innerHTML = '<i class="fas fa-check"></i>';
-    completeButton.classList.add("complete-button");
-    todoDiv.appendChild(completeButton);
-
-    // create and add trash button
-    const trashButton = document.createElement("button");
-    trashButton.innerHTML = '<i class="fas fa-trash"></i>';
-    trashButton.classList.add("trash-button");
-    todoDiv.appendChild(trashButton);
-
-    // append entire individual todo div to the todo list
-    todoList.appendChild(todoDiv);
-  });
 
   todos.forEach(function (todo) {
     // check if it was already rendered as a completed item
@@ -181,6 +161,36 @@ function getTodos() {
       // append entire individual todo div to the todo list
       todoList.appendChild(todoDiv);
     }
+  });
+
+  completedTodos.forEach(function (todo) {
+    handledSet.add(todo);
+    const todoDiv = document.createElement("div");
+    todoDiv.classList.add("todo");
+
+    // toggle it to completed
+    todoDiv.classList.toggle("completed");
+
+    // create and add copmleted todo list item title
+    const newTodo = document.createElement("li");
+    newTodo.innerText = todo;
+    newTodo.classList.add("todo-item");
+    todoDiv.appendChild(newTodo);
+
+    // create and add completed button
+    const completeButton = document.createElement("button");
+    completeButton.innerHTML = '<i class="fas fa-check"></i>';
+    completeButton.classList.add("complete-button");
+    todoDiv.appendChild(completeButton);
+
+    // create and add trash button
+    const trashButton = document.createElement("button");
+    trashButton.innerHTML = '<i class="fas fa-trash"></i>';
+    trashButton.classList.add("trash-button");
+    todoDiv.appendChild(trashButton);
+
+    // append entire individual todo div to the todo list
+    todoList.appendChild(todoDiv);
   });
 }
 
@@ -219,3 +229,30 @@ function getCompletedFromLocal() {
 function setToLocalStorage(name, data) {
   localStorage.setItem(name, JSON.stringify(data));
 }
+
+// Functions --- Dog images portion ---
+function ajax_get(url, callback) {
+  var xmlhttp = new XMLHttpRequest();
+  xmlhttp.onreadystatechange = function() {
+    if (xmlhttp.readyState == 4 && xmlhttp.status == 200) {
+      try {
+        var data = JSON.parse(xmlhttp.responseText);
+      } catch (err) {
+        console.log(err.message + " in " + xmlhttp.responseText);
+        return;
+      }
+      callback(data);
+    }
+  };
+
+  xmlhttp.open("GET", url, true);
+  xmlhttp.send();
+}
+
+ajax_get('https://api.thedogapi.com/v1/images/search?size=full', function(data) {
+  // document.getElementById("id").innerHTML = data[0]["id"];
+  // document.getElementById("url").innerHTML = data[0]["url"];
+
+  var html = '<img src="' + data[0]["url"] + '">';
+  document.getElementById("image").innerHTML = html;
+});
